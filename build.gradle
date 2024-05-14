@@ -1,0 +1,148 @@
+
+buildscript {
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${rootProject['kotlin.version']}"
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${rootProject.springBootVersion}"
+    }
+}
+
+plugins {
+    id 'jacoco'
+    id 'io.spring.javaformat' version '0.0.39'
+}
+
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'kotlin'
+
+//sourceSets.configureEach { sourceSet ->
+//    tasks.named(sourceSet.compileJavaTaskName).configure {
+//        options.annotationProcessorGeneratedSourcesDirectory = file("$buildDir/generated/sources/java")
+//    }
+//}
+
+dependencies {
+    compile project(':bazaar-common')
+
+    compile group: 'one.itpx.awesome', name: 'awesome-amber-actuator-2', version: '2.2.1.4'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.data:spring-data-elasticsearch'
+    implementation 'one.itpx.happy:happy-spring-elasticsearch:1.0.18'
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'one.itpx.happy:happy-spring-jwt:1.0.3'
+
+    implementation 'org.ehcache:ehcache'
+
+    implementation 'javax.cache:cache-api:1.1.0'
+
+    implementation 'com.vladmihalcea:hibernate-types-52:2.5.0'
+
+    implementation 'com.graphql-java-kickstart:graphql-spring-boot-starter:5.10.0'
+    runtime 'com.graphql-java-kickstart:altair-spring-boot-starter:5.10.0'
+
+    implementation group: 'one.itpx.agora', name: 'agora-product', version: '0.2.96'
+    implementation group: 'one.itpx.agora', name: 'agora-account', version: '0.1.41'
+    implementation group: 'one.itpx.wolverine', name: 'wolverine-common', version: '0.0.31'
+    compile group: 'one.itpx.api', name: 'itpx-api-hedwig', version: '0.0.6'
+
+    implementation group: 'one.itpx.odyssey', name: 'odyssey-order', version: rootProject.odysseyOrderVersion
+    implementation group: 'one.itpx.odyssey', name: 'odyssey-common', version: '0.0.7'
+
+    implementation group: 'one.itpx.zephyr', name: 'commons', version: '0.0.60'
+
+    // Legacy dependency leak from agora-account that needs to be explicitly included in the classpath
+    compileOnly 'javax.interceptor:javax.interceptor-api:1.+'
+
+//	implementation 'org.liquibase:liquibase-core'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
+
+    implementation 'org.springframework.kafka:spring-kafka'
+    implementation group: 'biz.paluch.logging', name: 'logstash-gelf', version: '1.13.0'
+    implementation group: 'net.logstash.logback', name: 'logstash-logback-encoder', version: '7.2'
+    annotationProcessor 'org.hibernate:hibernate-jpamodelgen'
+
+    compileOnly 'org.springframework:spring-context-indexer'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'mysql:mysql-connector-java'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    implementation group: 'io.jsonwebtoken', name: 'jjwt', version: '0.9.1'
+    implementation group: 'org.zalando', name: 'logbook-spring-boot-starter', version: '1.13.0'
+
+    implementation group: 'commons-collections', name: 'commons-collections', version: '3.2.2'
+    implementation 'io.sentry:sentry-logback:1.7.27'
+
+    compile 'com.graphql-java:graphql-java-extended-scalars:1.0'
+
+    compile group: 'io.github.openfeign', name: 'feign-okhttp'
+    compile group: 'org.zalando', name: 'logbook-okhttp', version: '1.13.0'
+    compile group: 'one.itpx.utils', name: 'crypto-utils', version: '1.0'
+
+    compile group: 'com.google.guava', name: 'guava', version: '28.0-jre'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
+
+    compile group: 'one.itpx.api', name: 'itpx-api-solar', version: '0.0.49'
+
+    implementation 'one.util:streamex:0.7.0'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.h2database:h2'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testImplementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${rootProject['kotlin.version']}"
+    testImplementation "pl.allegro.tech:embedded-elasticsearch:2.10.0"
+    testImplementation group: 'org.hamcrest', name: 'hamcrest-all', version: '1.3'
+
+    testCompile "org.testcontainers:mysql:1.13.0"
+
+    compile 'io.springfox:springfox-swagger2:2.7.0'
+    compile 'io.springfox:springfox-swagger-ui:2.7.0'
+    compile group: 'one.itpx.api', name: 'itpx-api-core', version: '0.0.36'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${rootProject.springCloudVersion}"
+    }
+}
+
+task installGitHooks(type: Copy) {
+    copy {
+        from new File(rootProject.rootDir, 'config/code-formatter-git-hooks/base-rule')
+        into { new File(rootProject.rootDir, '.git/hooks')}
+        rename ('base-rule','pre-commit')
+        filter { line -> line.replace('$InitMessage', 'Verifying code format') }
+        filter { line -> line.replace('$cmd','checkFormat') }
+        filter { line -> line.replace('$ErrorMessage', 'Code format is incorrect, please use ./gradlew format to auto-format the files') }
+        filter { line -> line.replace('$ExitMessage','Done with code format verification') }
+        fileMode 0777
+    }
+    copy {
+        from new File(rootProject.rootDir, 'config/code-formatter-git-hooks/base-rule')
+        into { new File(rootProject.rootDir, '.git/hooks')}
+        rename ('base-rule','pre-push')
+        filter { line -> line.replace('$InitMessage', 'Verifying code build') }
+        filter { line -> line.replace('$cmd','build') }
+        filter { line -> line.replace('$ErrorMessage', 'Code build failed, please check the error before pushing code') }
+        filter { line -> line.replace('$ExitMessage','Done with code build') }
+        fileMode 0777
+    }
+    copy {
+        from new File(rootProject.rootDir, 'config/code-formatter-git-hooks/base-rule')
+        into { new File(rootProject.rootDir, '.git/hooks')}
+        rename ('base-rule','pre-rebase')
+        filter { line -> line.replace('$InitMessage', 'Verifying code format') }
+        filter { line -> line.replace('$cmd','checkFormat') }
+        filter { line -> line.replace('$ErrorMessage', 'Code format is incorrect, please use ./gradlew format to auto-format the files') }
+        filter { line -> line.replace('$ExitMessage','Done with code format verification') }
+        fileMode 0777
+    }
+}
+
+build.dependsOn installGitHooks
